@@ -1,0 +1,10 @@
+os: osx
+osx_image: xcode9.2
+script:
+  - brew install scalacenter/bloop/bloop
+  - brew services start scalacenter/bloop/bloop
+  - coursier bootstrap --repository sonatype:releases --repository bintray:scalameta/maven com.github.duhemm:bloopstrap_2.12:3c6e215a -o bloopstrap-launcher
+  - CWD=$(dirs -l)
+  - ./bloopstrap-launcher "$CWD/bloopstrap.conf" "$CWD"
+  - bloop compile -p bloopstrap
+  - bloop test -p bloopstrap
