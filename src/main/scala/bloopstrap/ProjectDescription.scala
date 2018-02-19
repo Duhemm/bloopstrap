@@ -13,7 +13,8 @@ case class ProjectDescription(name: String,
                               javaHome: Option[String],
                               javaOptions: Array[String],
                               dependencies: Array[ModuleDescriptor],
-                              projectDependencies: Array[String])
+                              projectDependencies: Array[String],
+                              kind: ProjectKind)
     extends ConfigurationObject
 
 object ConfigurationObject {
@@ -50,6 +51,7 @@ object ConfigurationObject {
                     Defaults.dependencies)
                   projectDependencies <- obj.getOrElse("projectDependencies")(
                     Defaults.projectDependencies)
+                  kind = PlainProject
                   project = ProjectDescription(name,
                                                scala,
                                                scalacOptions,
@@ -58,7 +60,8 @@ object ConfigurationObject {
                                                javaHome,
                                                javaOptions,
                                                dependencies,
-                                               projectDependencies)
+                                               projectDependencies,
+                                               kind)
                 } yield project
             }
           case _ =>

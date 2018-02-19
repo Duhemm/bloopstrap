@@ -14,7 +14,9 @@ sealed trait Command {
 final case class New(project: ProjectDescription) extends Command {
   override def process(state: State): State = {
     val projectBase = state.baseDirectory.resolve(project.name)
-    val sourceBase = projectBase.resolve("src").resolve("main")
+    val sourceBase = projectBase
+      .resolve("src")
+      .resolve(if (project.kind == PlainProject) "main" else "test")
     val configDir = state.baseDirectory.resolve(".bloop-config")
     val scalaInstance =
       ScalaInstance.resolve(project.scala.org,
@@ -30,7 +32,8 @@ final case class New(project: ProjectDescription) extends Command {
 
     val newProject =
       Project(
-        name = project.name,
+        name = project.name + (if (project.kind == PlainProject) ""
+                               else "-test"),
         baseDirectory = projectBase,
         dependencies = Array.empty,
         scalaInstance = scalaInstance,
@@ -40,7 +43,9 @@ final case class New(project: ProjectDescription) extends Command {
         javacOptions = project.javacOptions,
         sourceDirectories =
           Array(sourceBase.resolve("scala"), sourceBase.resolve("java")),
-        testFrameworks = Defaults.defaultTestFrameworks,
+        testFrameworks =
+          if (project.kind == PlainProject) Array.empty
+          else Defaults.defaultTestFrameworks,
         javaEnv = javaEnv,
         tmp = projectBase.resolve("tmp"),
         bloopConfigDir = configDir
@@ -116,9 +121,21 @@ final case object Generate extends Command {
 
 object Command {
 
+  def makeTestProjects(projects: Map[String, ProjectDescription])
+    : Map[String, ProjectDescription] = {
+    projects.collect {
+      case (k, v) if !projects.contains(k + "-test") =>
+        val testProject =
+          v.copy(projectDependencies = v.projectDependencies :+ v.name,
+                 kind = TestProject)
+        testProject.name -> testProject
+    }
+  }
+
   def fromProjectDescriptions(
       projects: Map[String, ProjectDescription]): List[Command] = {
-    val descriptions = projects.values.toList
+    val testProjects = makeTestProjects(projects)
+    val descriptions = (projects ++ testProjects).values.toList
     val newCommands = descriptions.map { New(_) }
     val addLibCommands = descriptions.flatMap { desc =>
       desc.dependencies.map { dep =>
