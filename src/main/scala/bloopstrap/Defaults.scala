@@ -9,21 +9,22 @@ object Defaults {
                      defaultScalaArtifact,
                      defaultScalaVersion)
   val scala = defaultScalaDependency
-  val scalacOptions: Array[String] = Array.empty
-  val javacOptions: Array[String] = Array.empty
+  val classpathOptions: Seq[Boolean] = Seq.empty
+  val scalacOptions: Seq[String] = Seq.empty
+  val javacOptions: Seq[String] = Seq.empty
   val fork: Boolean = true
   val javaHome: Option[String] = None
-  val javaOptions: Array[String] = Array.empty
-  val dependencies: Array[ModuleDescriptor] = Array.empty
-  val projectDependencies: Array[String] = Array.empty
+  val javaOptions: Seq[String] = Seq.empty
+  val dependencies: Seq[ModuleDescriptor] = Seq.empty
+  val projectDependencies: Seq[String] = Seq.empty
 
-  val scalaCheck = Array("org.scalacheck.ScalaCheckFramework")
-  val specs2 = Array("org.specs2.runner.Specs2Framework",
-                     "org.specs2.runner.SpecsFramework",
-                     "org.specs.runner.SpecsFramework")
-  val scalatest = Array("org.scalatest.tools.Framework",
-                        "org.scalatest.tools.ScalaTestFramework")
-  val junit = Array("com.novocode.junit.JUnitFramework")
-  val defaultTestFrameworks = Array(scalaCheck, specs2, scalatest, junit)
+  val scalaCheck = Seq("org.scalacheck.ScalaCheckFramework")
+  val specs2 = Seq("org.specs2.runner.Specs2Framework",
+                   "org.specs2.runner.SpecsFramework",
+                   "org.specs.runner.SpecsFramework")
+  val scalatest = Seq("org.scalatest.tools.Framework",
+                      "org.scalatest.tools.ScalaTestFramework")
+  val junit = Seq("com.novocode.junit.JUnitFramework")
+  val defaultTestFrameworks = Seq(scalaCheck, specs2, scalatest, junit)
 
 }

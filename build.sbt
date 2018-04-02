@@ -4,6 +4,7 @@ organization := "com.github.duhemm"
 name := "bloopstrap"
 description := "Define and import Bloop projects without build tool"
 libraryDependencies += Dependencies.bloopFrontend
+libraryDependencies += Dependencies.bloopIntegrationsCore
 libraryDependencies += Dependencies.metaconfig
 
 inThisBuild(
@@ -18,5 +19,6 @@ inThisBuild(
                 url("https://github.com/Duhemm"))),
     scmInfo := Some(ScmInfo(url("https://github.com/Duhemm/bloopstrap"),
                             "scm:git:git@github.com:Duhemm/bloopstrap.git")),
-    releaseEarlyWith := SonatypePublisher
+    releaseEarlyWith := SonatypePublisher,
+    resolvers += Resolver.bintrayRepo("scalameta", "maven")
   ))

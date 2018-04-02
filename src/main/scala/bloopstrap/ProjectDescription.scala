@@ -6,14 +6,15 @@ import metaconfig.{Conf, ConfDecoder, Configured}
 sealed trait ConfigurationObject
 case object NotAProject extends ConfigurationObject
 case class ProjectDescription(name: String,
+                              classpathOptions: Seq[Boolean],
                               scala: ModuleDescriptor,
-                              scalacOptions: Array[String],
-                              javacOptions: Array[String],
+                              scalacOptions: Seq[String],
+                              javacOptions: Seq[String],
                               fork: Boolean,
                               javaHome: Option[String],
-                              javaOptions: Array[String],
-                              dependencies: Array[ModuleDescriptor],
-                              projectDependencies: Array[String],
+                              javaOptions: Seq[String],
+                              dependencies: Seq[ModuleDescriptor],
+                              projectDependencies: Seq[String],
                               kind: ProjectKind)
     extends ConfigurationObject
 
@@ -38,6 +39,8 @@ object ConfigurationObject {
               case Some(moduleName) =>
                 for {
                   name <- moduleName.as[String]
+                  classpathOptions <- obj.getOrElse("classpathOptions")(
+                    Defaults.classpathOptions)
                   scala <- obj.getOrElse("scala")(Defaults.scala)
                   scalacOptions <- obj.getOrElse("scalacOptions")(
                     Defaults.scalacOptions)
@@ -53,6 +56,7 @@ object ConfigurationObject {
                     Defaults.projectDependencies)
                   kind = PlainProject
                   project = ProjectDescription(name,
+                                               classpathOptions,
                                                scala,
                                                scalacOptions,
                                                javacOptions,

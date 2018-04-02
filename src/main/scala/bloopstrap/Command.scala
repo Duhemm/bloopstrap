@@ -3,7 +3,8 @@ package bloopstrap
 import java.io.IOException
 import java.nio.file.Files
 
-import bloop.{DependencyResolution, Project, ScalaInstance}
+import bloop.{DependencyResolution, ScalaInstance}
+import bloop.integrations.BloopConfig
 import bloop.io.AbsolutePath
 import bloop.exec.JavaEnv
 
@@ -25,30 +26,50 @@ final case class New(project: ProjectDescription) extends Command {
                             state.logger)
     val javaEnv = project.javaHome match {
       case Some(home) =>
-        JavaEnv(project.fork, AbsolutePath(home), project.javaOptions)
+        JavaEnv(AbsolutePath(home), project.javaOptions.toArray)
       case None =>
-        JavaEnv.default(project.fork).copy(javaOptions = project.javaOptions)
+        JavaEnv.default.copy(javaOptions = project.javaOptions.toArray)
+    }
+    val classpathOptions = {
+      project.classpathOptions match {
+        case Seq(bootLibrary, compiler, extra, autoBoot, filterLibrary) =>
+          bloop.integrations.ClasspathOptions(bootLibrary,
+                                              compiler,
+                                              extra,
+                                              autoBoot,
+                                              filterLibrary)
+        case _ =>
+          val default = xsbti.compile.ClasspathOptionsUtil.boot
+          bloop.integrations.ClasspathOptions(default.bootLibrary,
+                                              default.compiler,
+                                              default.extra,
+                                              default.autoBoot,
+                                              default.filterLibrary)
+      }
     }
 
     val newProject =
-      Project(
-        name = project.name + (if (project.kind == PlainProject) ""
-                               else "-test"),
-        baseDirectory = projectBase,
-        dependencies = Array.empty,
-        scalaInstance = scalaInstance,
-        rawClasspath = Array.empty,
-        classesDir = projectBase.resolve("target").resolve("classes"),
+      BloopConfig(
+        name = project.name,
+        baseDirectory = projectBase.toFile,
+        dependencies = Seq.empty,
+        scalaOrganization = scalaInstance.organization,
+        scalaName = scalaInstance.name,
+        scalaVersion = scalaInstance.version,
+        classpath = Seq.empty,
+        classpathOptions = classpathOptions,
+        classesDir = projectBase.resolve("target").resolve("classes").toFile,
         scalacOptions = project.scalacOptions,
         javacOptions = project.javacOptions,
-        sourceDirectories =
-          Array(sourceBase.resolve("scala"), sourceBase.resolve("java")),
+        sourceDirectories = Seq(sourceBase.resolve("scala").toFile,
+                                sourceBase.resolve("java").toFile),
         testFrameworks =
-          if (project.kind == PlainProject) Array.empty
+          if (project.kind == PlainProject) Seq.empty
           else Defaults.defaultTestFrameworks,
-        javaEnv = javaEnv,
-        tmp = projectBase.resolve("tmp"),
-        bloopConfigDir = configDir
+        javaHome = javaEnv.javaHome.toFile,
+        javaOptions = javaEnv.javaOptions,
+        allScalaJars = scalaInstance.allJars,
+        tmp = projectBase.resolve("tmp").toFile
       )
 
     state.copy(projects = state.projects + (project.name -> newProject))
@@ -62,7 +83,7 @@ final case class DependsOn(projectName: String, dependency: String)
         val newProject =
           dependent.copy(
             dependencies = dependent.dependencies :+ dependency,
-            rawClasspath = (dependent.rawClasspath :+ dependee.classesDir) ++ dependee.rawClasspath)
+            classpath = (dependent.classpath :+ dependee.classesDir) ++ dependee.classpath)
         state.copy(projects = state.projects + (projectName -> newProject))
       case (Some(_), None) =>
         state.logger.error(s"Not found: $dependency")
@@ -87,9 +108,10 @@ final case class AddLibrary(projectName: String, lib: ModuleDescriptor)
                                        lib.version,
                                        state.logger)
 
-        val jars = dependencyFiles.filter(_.toString.endsWith(".jar"))
+        val jars =
+          dependencyFiles.filter(_.toString.endsWith(".jar")).map(_.toFile)
         val newProject =
-          project.copy(rawClasspath = project.rawClasspath ++ jars)
+          project.copy(classpath = project.classpath ++ jars)
         state.copy(projects = state.projects + (projectName -> newProject))
       case None =>
         state.logger.error(s"Not found: $projectName")
@@ -100,20 +122,13 @@ final case class AddLibrary(projectName: String, lib: ModuleDescriptor)
 
 final case object Generate extends Command {
   override def process(state: State): State = {
+    val outBase = state.baseDirectory.resolve(".bloop-config")
+    Files.createDirectories(outBase.underlying)
     state.projects.values.foreach { p =>
-      val props = p.toProperties
-      val outPath = p.bloopConfigDir.resolve(p.name + ".config")
-      try {
-        Files.createDirectories(p.bloopConfigDir.underlying)
-        val stream = Files.newOutputStream(outPath.underlying)
-        props.store(stream, null)
-        state.logger.info(
-          s"Bloopstrap wrote config of project ${p.name} to $outPath")
-      } catch {
-        case ex: IOException =>
-          state.logger.error(s"Writing to $outPath failed: ${ex.getMessage}")
-          state.logger.trace(ex)
-      }
+      val outFile = outBase.resolve(p.name + ".config").toFile
+      p.writeTo(outFile)
+      state.logger.info(
+        s"Bloopstrap wrote config of project ${p.name} to $outFile")
     }
     state
   }
@@ -126,7 +141,8 @@ object Command {
     projects.collect {
       case (k, v) if !projects.contains(k + "-test") =>
         val testProject =
-          v.copy(projectDependencies = v.projectDependencies :+ v.name,
+          v.copy(name = v.name + "-test",
+                 projectDependencies = v.projectDependencies :+ v.name,
                  kind = TestProject)
         testProject.name -> testProject
     }
