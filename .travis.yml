@@ -2,5 +2,5 @@ os: osx
 osx_image: xcode9.2
 script:
   - bin/setup-travis.sh
-  - bloop compile -p bloopstrap
-  - bloop test -p bloopstrap
+  - bloop compile bloopstrap
+  - bloop test bloopstrap
