@@ -1,6 +1,20 @@
-os: osx
-osx_image: xcode9.2
+jdk:
+    - oraclejdk8
+
+before_install:
+    - curl -L -o coursier https://git.io/vgvpD && chmod +x coursier
+    - curl -L https://github.com/scalacenter/bloop/releases/download/v1.0.0-M8/install.py | python3
+    - CWD=$(dirs -l)
+    - ./coursier bootstrap -r sonatype:releases -r bintray:scalameta/maven com.github.duhemm:bloopstrap_2.12:1.0.0-M8 -o bloopstrap-launcher
+    - ./bloopstrap-launcher "$CWD/bloopstrap.conf" "$CWD"
+
 script:
-  - bin/setup-travis.sh
-  - bloop compile bloopstrap
-  - bloop test bloopstrap
+    - $HOME/.bloop/blp-server &
+    - sleep 5
+    - $HOME/.bloop/bloop compile bloopstrap
+    - $HOME/.bloop/bloop test bloopstrap
+
+cache:
+    directories:
+        - $HOME/.ivy2/cache
+        - $HOME/.coursier
