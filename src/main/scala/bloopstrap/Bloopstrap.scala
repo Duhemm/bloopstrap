@@ -12,7 +12,7 @@ object Bloopstrap {
       case Array(configPath, destinationPath) =>
         logger.info(s"Reading configuration from $configPath")
 
-        ConfigReader(AbsolutePath(configPath).toFile) match {
+        ConfigReader(AbsolutePath(configPath).toFile, Defaults.config) match {
           case Configured.Ok(descriptions) =>
             logger.info(
               s"Found ${descriptions.size} projects: ${descriptions.keys.mkString(", ")}")
