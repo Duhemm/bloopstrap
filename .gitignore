@@ -1,2 +1,3 @@
 bin/.coursier
 bin/.scalafmt*
+.bloop-config
