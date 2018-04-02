@@ -1,5 +1,7 @@
 package bloopstrap
 
+import com.typesafe.config.ConfigFactory
+
 object Defaults {
   val defaultScalaOrganization = "org.scala-lang"
   val defaultScalaArtifact = "scala-compiler"
@@ -26,5 +28,10 @@ object Defaults {
                       "org.scalatest.tools.ScalaTestFramework")
   val junit = Seq("com.novocode.junit.JUnitFramework")
   val defaultTestFrameworks = Seq(scalaCheck, specs2, scalatest, junit)
+
+  val config =
+    ConfigFactory.parseString("""defaults {
+      |  scalaCompiler = "org.scala-lang:scala-compiler"
+      |}""".stripMargin)
 
 }

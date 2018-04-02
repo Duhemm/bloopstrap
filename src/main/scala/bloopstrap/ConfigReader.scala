@@ -2,12 +2,17 @@ package bloopstrap
 
 import metaconfig.Conf
 import metaconfig.Configured
-import metaconfig.typesafeconfig._
+import metaconfig.typesafeconfig.typesafeConfigMetaconfigParser
+import com.typesafe.config.Config
 
 import java.io.File
 
 object ConfigReader {
-  def apply(file: File): Configured[Map[String, ProjectDescription]] = {
+
+  def apply(file: File,
+            defaults: Config): Configured[Map[String, ProjectDescription]] = {
+
+    implicit val configParser = typesafeConfigMetaconfigParser(defaults)
 
     def parseDescList(lst: List[Conf]) = {
       val projects = lst.map(_.as[ConfigurationObject])

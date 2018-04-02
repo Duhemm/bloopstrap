@@ -12,6 +12,7 @@ script:
     - $HOME/.bloop/blp-server &
     - sleep 5
     - $HOME/.bloop/bloop compile bloopstrap
+    - $HOME/.bloop/bloop run bloopstrap -- tests/test-config.conf tests-out
     - $HOME/.bloop/bloop test bloopstrap
 
 cache:
